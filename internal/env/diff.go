@@ -1,6 +1,9 @@
 package env
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+)
 
 // ChangeKind describes the type of change between two env files.
 type ChangeKind string
@@ -34,6 +37,7 @@ func (c Change) String() string {
 }
 
 // Diff computes the differences between an old and new env File.
+// The returned changes are sorted by key for deterministic output.
 func Diff(old, new *File) []Change {
 	oldMap := toMap(old)
 	newMap := toMap(new)
@@ -54,6 +58,10 @@ func Diff(old, new *File) []Change {
 			changes = append(changes, Change{Kind: ChangeAdded, Key: key, NewValue: newVal})
 		}
 	}
+
+	sort.Slice(changes, func(i, j int) bool {
+		return changes[i].Key < changes[j].Key
+	})
 
 	return changes
 }
