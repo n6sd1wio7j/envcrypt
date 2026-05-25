@@ -58,6 +58,34 @@ func LoadSnapshot(path string) (*Snapshot, error) {
 	}, nil
 }
 
+// Diff returns the keys that were added, removed, or changed between s and
+// other. It returns three slices: added keys (present in other but not s),
+// removed keys (present in s but not other), and changed keys (present in
+// both but with different values).
+func (s *Snapshot) Diff(other *Snapshot) (added, removed, changed []string) {
+	base := make(map[string]string, len(s.Entries))
+	for _, e := range s.Entries {
+		base[e.Key] = e.Value
+	}
+	next := make(map[string]string, len(other.Entries))
+	for _, e := range other.Entries {
+		next[e.Key] = e.Value
+	}
+	for k, v := range next {
+		if old, ok := base[k]; !ok {
+			added = append(added, k)
+		} else if old != v {
+			changed = append(changed, k)
+		}
+	}
+	for k := range base {
+		if _, ok := next[k]; !ok {
+			removed = append(removed, k)
+		}
+	}
+	return added, removed, changed
+}
+
 // timestampFromPath parses a timestamp from a snapshot filename of the form
 // snapshot_20060102T150405Z.env.
 func timestampFromPath(name string) (time.Time, error) {
